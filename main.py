@@ -1,3 +1,6 @@
+import os
+import pickle
+
 class MyFunc():
     def __init__(self, db, args_list):
         self.args_list = args_list#[:]
@@ -11,7 +14,7 @@ class MyFunc():
         # At this point all positional arguments are fine.
         for arg in self.args_list[len(args):]:
             if arg not in kwargs:
-                raise TypeError(f'Missing value for argument {arg}.')
+                raise TypeError('Missing value for argument {arg}.')
 
         # At this point, all arguments have been passed either as
         # positional or keyword.
@@ -32,16 +35,56 @@ class MyFunc():
         #print(self.args_list[len(args):])
         #for kw in self.args_list[len(args):]:
             #self.db.main[self.db.pkey_max][kw] = arg
+
         self.db.pkey_max += 1
+        self.db.serialise()
         return self.db.pkey_max-1
 
 class Database:
-    def __init__(self, *args):
+    def __init__(self, filename, *args):
         #self.main = {primary_key: {x: None for x in args}}
-        self.main = {}
-        self.args = args
-        self.pkey_max = 0
+        # If the file exists
+        self.filename=f"{filename}.db"
+        if os.path.isfile(self.filename):
+            # Try to load the file
+            try:
+                with open(self.filename, "rb") as file:
+                    self.main = pickle.load(file)
+            except Exception as e:
+                print(f"An error occurred, this is all we know: {e}")
+        # If the file doesn't exist, and also no pos args
+        elif not args:
+            raise TypeError(f"Neither filename nor positional arguments supplied.\n{filename}\n{args}")
+        # So by now there should be args, and a filename for a missing file
+        else:
+            # Set up main dict
+            self.main = {}
+        # If we have an existing database
+        if self.main:
+            print("we have main")
+            #self.pkey_max = self.main[0]
+            self.pkey_max = len(self.main)+1
+            self.args = list(self.main[0].keys())
+        # Else, if the database is empty
+        else:
+            print("we have no main")
+            # Set pkey_max to zero
+            self.pkey_max = 0
+            self.args = args
         self.add_entry = MyFunc(self, self.args)
+        # If the pkey_max is zero
+        if not self.pkey_max:
+            # Set pkey stuff to be stored
+            self.add_entry(*["0" for _ in range(len(self.args))])
+
+    def items(self):
+        return self.main.items()
+
+    def serialise(self):
+        for key in self.main[0].keys(): #in self.args innit?
+            self.main[0][key] = f"{self.pkey_max}"
+        with open(self.filename, "wb") as file:
+            pickle.dump(self.main, file)
 
     # check if the pkey is in the database
     def get_pkey(self, pkey, default=None):
@@ -64,10 +107,13 @@ class Database:
         else:
             return default
 
-db = Database("one", "two", "three", "four")
-print(db.add_entry(1, 4, three=3, four=16))
-print(db.add_entry("a", "b", "c", "d"))
-print(db.add_entry(one=-1, two=-2, three=-3, four=-4))
-for x in range(5):
-    if db.get_pkey(x):
-        print(db.main[x])
+db = Database("quotes", "one", "two", "three", "four")
+db.add_entry(1, 4, three=3, four=16)
+db.add_entry("a", "b", "c", "d")
+db.add_entry(one=-1, two=-2, three=-3, four=-4)
+for k, v in db.items():
+    print(k, v)
+# print(repr(db.main))
+#db.serialise()
+print("done c:")
+
