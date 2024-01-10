@@ -14,12 +14,12 @@ class MyFunc():
         # At this point all positional arguments are fine.
         for arg in self.args_list[len(args):]:
             if arg not in kwargs:
-                raise TypeError('Missing value for argument {arg}.')
+                raise TypeError(f'Missing value for argument {arg}.')
 
         # At this point, all arguments have been passed either as
         # positional or keyword.
         if len(self.args_list) - len(args) != len(kwargs):
-            raise TypeError('Too many arguments passed.')
+            raise TypeError(f'Too many arguments passed.')
 
         if self.db is not None:
             self.db.main[self.db.pkey_max] = {}
@@ -81,7 +81,7 @@ class Database:
         return self.main.items()
 
     def serialise(self):
-        for key in self.main[0].keys(): #in self.args innit?
+        for key in self.args:
             self.main[0][key] = f"{self.pkey_max}"
         with open(self.filename, "wb") as file:
             pickle.dump(self.main, file)
@@ -116,4 +116,3 @@ for k, v in db.items():
 # print(repr(db.main))
 #db.serialise()
 print("done c:")
-
